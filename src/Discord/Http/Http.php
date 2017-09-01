@@ -139,7 +139,8 @@ class Http
      */
     private function runRequest($method, $url, $content, $extraHeaders, $cache, $blocking, $options)
     {
-        $deferred = new Deferred();
+        $deferred     = new Deferred();
+        $disable_json = false;
 
         $key = 'guzzle.'.sha1($url);
         if ($method === 'get' && $this->cache->has($key)) {
@@ -151,6 +152,10 @@ class Http
         $headers = [
             'User-Agent' => $this->getUserAgent(),
         ];
+
+        if (! isset($options['multipart'])) {
+            $headers['Content-Length'] = 0;
+        }
 
         $headers['authorization'] = $this->token;
 
@@ -168,8 +173,17 @@ class Http
             return json_decode($response->getBody());
         }
 
+        if (array_key_exists('disable_json', $options)) {
+            $disable_json = $options['disable_json'];
+            unset($options['disable_json']);
+        }
+
         $this->driver->runRequest($method, $url, $headers, $content, $options)->then(
-            function ($response) use ($method, $cache, $key, $deferred) {
+            function ($response) use ($method, $cache, $key, $deferred, $disable_json) {
+                if ($disable_json) {
+                    return $deferred->resolve($response->getBody());
+                }
+
                 $json = json_decode($response->getBody());
 
                 if ($method === 'get' && $cache !== false) {

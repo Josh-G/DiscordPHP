@@ -66,7 +66,7 @@ class DiscordCommandClient extends Discord
 
                 if (substr($message->content, 0, strlen($this->commandClientOptions['prefix'])) == $this->commandClientOptions['prefix']) {
                     $withoutPrefix = substr($message->content, strlen($this->commandClientOptions['prefix']));
-                    $args = str_getcsv($withoutPrefix, ' ');
+                    $args = array_filter(str_getcsv($withoutPrefix, ' '));
                     $command = array_shift($args);
 
                     if (array_key_exists($command, $this->commands)) {
@@ -154,7 +154,7 @@ class DiscordCommandClient extends Discord
         $this->commands[$command]        = $commandInstance;
 
         foreach ($options['aliases'] as $alias) {
-            $this->addCommandAlias($alias, $command);
+            $this->registerAlias($alias, $command);
         }
 
         return $commandInstance;
@@ -315,5 +315,23 @@ class DiscordCommandClient extends Discord
             ]);
 
         return $resolver->resolve($options);
+    }
+
+    /**
+     * Handles dynamic get calls to the command client.
+     *
+     * @param string $name Variable name.
+     *
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        $allowed = ['commands', 'aliases'];
+
+        if (array_search($name, $allowed) !== false) {
+            return $this->{$name};
+        }
+
+        return parent::__get($name);
     }
 }
