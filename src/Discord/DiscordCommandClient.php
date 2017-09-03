@@ -64,8 +64,12 @@ class DiscordCommandClient extends Discord
                     return;
                 }
 
-                if (substr($message->content, 0, strlen($this->commandClientOptions['prefix'])) == $this->commandClientOptions['prefix']) {
-                    $withoutPrefix = substr($message->content, strlen($this->commandClientOptions['prefix']));
+                if ($message->channel->is_private or substr($message->content, 0, strlen($this->commandClientOptions['prefix'])) == $this->commandClientOptions['prefix']) {
+                    $withoutPrefix = $message->content;
+                    if (!$message->channel->is_private) {
+                        $withoutPrefix = substr($message->content, strlen($this->commandClientOptions['prefix']));
+                    }
+
                     $args = array_filter(str_getcsv($withoutPrefix, ' '));
                     $command = array_shift($args);
 
@@ -79,7 +83,6 @@ class DiscordCommandClient extends Discord
                     }
 
                     $result = $command->handle($message, $args);
-
                     if (is_string($result)) {
                         $message->reply($result);
                     }

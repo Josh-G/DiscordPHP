@@ -85,6 +85,19 @@ class Message extends Part
         return $this->channel->sendMessage("{$this->author}, {$text}");
     }
 
+    public function edit($newContent) {
+        $deferred = new Deferred();
+
+        $this->http->patch("channels/{$this->channel->id}/messages/{$this->id}", ['content' => $newContent])
+            ->done(
+                \React\Partial\bind_right($this->resolve, $deferred),
+                \React\Partial\bind_right($this->reject, $deferred)
+            );
+
+        return $deferred->promise();
+    }
+
+
     /**
      * Reacts to the message.
      *
@@ -180,9 +193,11 @@ class Message extends Part
     {
         $roles = new Collection([], 'id');
 
-        foreach ($this->channel->guild->roles as $role) {
-            if (array_search($role->id, $this->attributes['mention_roles']) !== false) {
-                $roles->push($role);
+        if (!$this->channel->is_private) {
+            foreach ($this->channel->guild->roles as $role) {
+                if (array_search($role->id, $this->attributes['mention_roles']) !== false) {
+                    $roles->push($role);
+                }
             }
         }
 
